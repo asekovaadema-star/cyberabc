@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ScreenLayout from '@/components/ScreenLayout';
 import { getStats, saveStats } from '@/lib/storage';
-import { toggleAudio, stopAudio } from '@/lib/audioPlayer';
-import { Volume2 } from 'lucide-react';
+import { stopAudio } from '@/lib/audioPlayer';
+import PauseMenu from '@/components/PauseMenu';
 
 const SAFE = [
   "Привет! Как дела? Давай поиграем после школы!",
@@ -25,21 +25,22 @@ const DANGEROUS = [
   "Вот ссылка на школьный сайт (free-prizes.com)",
 ];
 
+const shuffle = () => {
+  const all = [
+    ...SAFE.map(t => ({ text: t, safe: true })),
+    ...DANGEROUS.map(t => ({ text: t, safe: false })),
+  ];
+  return all.sort(() => Math.random() - 0.5).slice(0, 6);
+};
+
 const JungleGame = () => {
   const navigate = useNavigate();
-  const [round, setRound] = useState(0);
+  const [messages, setMessages] = useState(shuffle);
   const [score, setScore] = useState(0);
   const [mistakes, setMistakes] = useState(0);
-  const [messages] = useState(() => {
-    const all = [
-      ...SAFE.map(t => ({ text: t, safe: true })),
-      ...DANGEROUS.map(t => ({ text: t, safe: false })),
-    ];
-    const shuffled = all.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 6);
-  });
   const [answered, setAnswered] = useState<boolean[]>(new Array(6).fill(false));
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
 
   const handleAnswer = (idx: number, userSaysSafe: boolean) => {
     if (answered[idx]) return;
@@ -49,14 +50,12 @@ const JungleGame = () => {
     newAnswered[idx] = true;
     setAnswered(newAnswered);
 
-    if (correct) {
-      setScore(s => s + 1);
-      setFeedback('✅ Правильно!');
-    } else {
-      setMistakes(m => m + 1);
-      setFeedback('❌ Неправильно!');
-    }
+    const newScore = correct ? score + 1 : score;
+    const newMistakes = correct ? mistakes : mistakes + 1;
+    if (correct) setScore(newScore);
+    else setMistakes(newMistakes);
 
+    setFeedback(correct ? '✅ Правильно!' : '❌ Неправильно!');
     setTimeout(() => setFeedback(null), 800);
 
     if (newAnswered.every(Boolean)) {
@@ -64,43 +63,54 @@ const JungleGame = () => {
         const stats = getStats();
         stats.jungleGamesPlayed++;
         stats.totalGamesPlayed++;
-        if (mistakes === 0 && correct) {
-          stats.jungleCleanWins++;
-        }
+        if (newMistakes === 0) stats.jungleCleanWins++;
         saveStats(stats);
-        navigate(score + (correct ? 1 : 0) >= 4 ? '/victory' : '/game-over');
+        navigate(newScore >= 4 ? '/victory' : '/game-over');
       }, 1000);
     }
   };
 
+  const handleRestart = () => {
+    setMessages(shuffle());
+    setScore(0);
+    setMistakes(0);
+    setAnswered(new Array(6).fill(false));
+    setFeedback(null);
+    setPaused(false);
+  };
+
   return (
     <ScreenLayout backgroundImage="/images/social_jungls.png">
-      <div className="absolute top-4 left-0 right-0 flex justify-between px-6">
-        <span className="bg-white/80 rounded-full px-4 py-2 font-bold text-green-600">✅ {score}</span>
-        <span className="bg-white/80 rounded-full px-4 py-2 font-bold text-red-600">❌ {mistakes}</span>
+      <PauseMenu
+        onResume={() => setPaused(p => !p)}
+        onRestart={handleRestart}
+      />
+      <div className="absolute top-4 left-16 right-4 flex justify-between">
+        <span className="bg-white/80 rounded-full px-3 py-1.5 font-bold text-sm text-green-600">✅ {score}</span>
+        <span className="bg-white/80 rounded-full px-3 py-1.5 font-bold text-sm text-red-600">❌ {mistakes}</span>
       </div>
 
       {feedback && (
-        <div className="absolute top-16 left-0 right-0 flex justify-center">
-          <span className="bg-white/90 rounded-full px-6 py-2 font-bold text-xl shadow-lg">{feedback}</span>
+        <div className="absolute top-14 left-0 right-0 flex justify-center z-10">
+          <span className="bg-white/90 rounded-full px-6 py-2 font-bold text-lg shadow-lg">{feedback}</span>
         </div>
       )}
 
-      <div className="absolute inset-x-4 top-24 bottom-20 overflow-y-auto space-y-3">
+      <div className="absolute inset-x-4 top-20 bottom-4 overflow-y-auto space-y-2">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`bg-white/90 backdrop-blur rounded-xl p-4 shadow-lg ${answered[idx] ? 'opacity-50' : ''}`}>
-            <p className="text-sm font-semibold mb-2">{msg.text}</p>
+          <div key={idx} className={`bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg ${answered[idx] ? 'opacity-50' : ''}`}>
+            <p className="text-xs font-semibold mb-2">{msg.text}</p>
             {!answered[idx] && (
               <div className="flex gap-2">
                 <button
                   onClick={() => handleAnswer(idx, true)}
-                  className="flex-1 bg-green-500 text-white py-2 rounded-full text-sm font-bold"
+                  className="flex-1 bg-green-500 text-white py-1.5 rounded-full text-xs font-bold"
                 >
                   Безопасно
                 </button>
                 <button
                   onClick={() => handleAnswer(idx, false)}
-                  className="flex-1 bg-red-500 text-white py-2 rounded-full text-sm font-bold"
+                  className="flex-1 bg-red-500 text-white py-1.5 rounded-full text-xs font-bold"
                 >
                   Опасно
                 </button>
@@ -108,15 +118,6 @@ const JungleGame = () => {
             )}
           </div>
         ))}
-      </div>
-
-      <div className="absolute bottom-6 left-0 right-0 flex justify-center">
-        <button
-          onClick={() => { stopAudio(); navigate('/menu'); }}
-          className="bg-orange-400 hover:bg-orange-500 text-white py-3 px-6 rounded-full font-bold text-lg shadow-lg"
-        >
-          Меню
-        </button>
       </div>
     </ScreenLayout>
   );
