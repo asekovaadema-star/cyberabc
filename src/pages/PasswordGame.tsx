@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ScreenLayout from '@/components/ScreenLayout';
 import { getStats, saveStats } from '@/lib/storage';
+import PauseMenu from '@/components/PauseMenu';
 
 const WEAK_PASSWORDS = ['123456', 'password', 'qwerty', 'abc123', 'letmein', '111111'];
 
 const generatePassword = (): string => {
-  const base = WEAK_PASSWORDS[Math.floor(Math.random() * WEAK_PASSWORDS.length)];
-  return base;
+  return WEAK_PASSWORDS[Math.floor(Math.random() * WEAK_PASSWORDS.length)];
 };
 
 const TIPS = [
@@ -29,9 +29,10 @@ const checkStrength = (pw: string): number => {
 
 const PasswordGame = () => {
   const navigate = useNavigate();
-  const [originalPw] = useState(generatePassword);
+  const [originalPw, setOriginalPw] = useState(generatePassword);
   const [userPw, setUserPw] = useState(originalPw);
   const [submitted, setSubmitted] = useState(false);
+  const [paused, setPaused] = useState(false);
 
   const strength = checkStrength(userPw);
   const isStrong = strength >= 3;
@@ -47,8 +48,20 @@ const PasswordGame = () => {
     }, 1500);
   };
 
+  const handleRestart = () => {
+    const pw = generatePassword();
+    setOriginalPw(pw);
+    setUserPw(pw);
+    setSubmitted(false);
+    setPaused(false);
+  };
+
   return (
     <ScreenLayout backgroundImage="/images/password_game.png">
+      <PauseMenu
+        onResume={() => setPaused(p => !p)}
+        onRestart={handleRestart}
+      />
       <div className="absolute inset-0 flex flex-col items-center justify-center px-8">
         <div className="bg-white/90 backdrop-blur rounded-2xl p-6 w-full max-w-xs shadow-xl space-y-4">
           <p className="text-center text-gray-700 font-semibold">Слабый пароль:</p>
