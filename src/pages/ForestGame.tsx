@@ -2,78 +2,70 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ScreenLayout from '@/components/ScreenLayout';
 import { getStats, saveStats } from '@/lib/storage';
-import { Mail } from 'lucide-react';
 import PauseMenu from '@/components/PauseMenu';
 
-interface Envelope {
+interface FallingLetter {
   id: number;
-  text: string;
-  safe: boolean;
+  letter: string;
+  color: 'black' | 'pink' | 'white';
   x: number;
   y: number;
   speed: number;
 }
 
-const SAFE_MESSAGES = [
-  '📧 Привет от бабушки!',
-  '📧 Школьное расписание',
-  '📧 Поздравляю с днём рождения!',
-  '📧 Домашнее задание',
-  '📧 Фото с каникул от друга',
-  '📧 Приглашение на день рождения',
-];
-
-const DANGER_MESSAGES = [
-  '⚠️ Ты выиграл iPhone! Нажми!',
-  '⚠️ Отправь пароль другу',
-  '⚠️ Скачай бесплатную игру.exe',
-  '⚠️ Незнакомец: пришли фото',
-  '⚠️ Введи данные карты мамы',
-  '⚠️ Нажми на ссылку и получи приз',
-];
+const LETTERS = 'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЭЮЯ'.split('');
 
 let nextId = 0;
 
 const ForestGame = () => {
   const navigate = useNavigate();
-  const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
+  const [items, setItems] = useState<FallingLetter[]>([]);
   const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(15);
   const [gameOver, setGameOver] = useState(false);
   const [paused, setPaused] = useState(false);
+  const missedDanger = useRef(false);
 
-  const spawnEnvelope = useCallback(() => {
-    const isSafe = Math.random() > 0.5;
-    const messages = isSafe ? SAFE_MESSAGES : DANGER_MESSAGES;
-    const env: Envelope = {
+  const spawnLetter = useCallback(() => {
+    const colors: FallingLetter['color'][] = ['black', 'pink', 'white'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const fl: FallingLetter = {
       id: nextId++,
-      text: messages[Math.floor(Math.random() * messages.length)],
-      safe: isSafe,
-      x: Math.random() * 60 + 10,
-      y: -12,
-      speed: 0.4 + Math.random() * 0.6,
+      letter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
+      color,
+      x: Math.random() * 70 + 10,
+      y: -10,
+      speed: 0.3 + Math.random() * 0.4,
     };
-    setEnvelopes(prev => [...prev, env]);
+    setItems(prev => [...prev, fl]);
   }, []);
 
+  // Spawn letters
   useEffect(() => {
     if (gameOver || paused) return;
-    const interval = setInterval(spawnEnvelope, 2500);
+    const interval = setInterval(spawnLetter, 1800);
     return () => clearInterval(interval);
-  }, [gameOver, paused, spawnEnvelope]);
+  }, [gameOver, paused, spawnLetter]);
 
+  // Move letters down
   useEffect(() => {
     if (gameOver || paused) return;
     const interval = setInterval(() => {
-      setEnvelopes(prev => {
-        const updated = prev.map(e => ({ ...e, y: e.y + e.speed }));
-        return updated.filter(e => e.y < 110);
+      setItems(prev => {
+        const updated = prev.map(l => ({ ...l, y: l.y + l.speed }));
+        // Check if any black/pink letter fell off screen without being tapped
+        updated.forEach(l => {
+          if (l.y >= 100 && (l.color === 'black' || l.color === 'pink')) {
+            missedDanger.current = true;
+          }
+        });
+        return updated.filter(l => l.y < 110);
       });
     }, 80);
     return () => clearInterval(interval);
   }, [gameOver, paused]);
 
+  // Timer
   useEffect(() => {
     if (gameOver || paused) return;
     const interval = setInterval(() => {
@@ -88,69 +80,63 @@ const ForestGame = () => {
     return () => clearInterval(interval);
   }, [gameOver, paused]);
 
+  // Game end
   useEffect(() => {
-    if (gameOver) {
-      const stats = getStats();
-      stats.forestGamesPlayed++;
-      stats.totalGamesPlayed++;
-      saveStats(stats);
-      setTimeout(() => {
-        navigate(score >= 3 ? '/victory' : '/game-over');
-      }, 1000);
-    }
+    if (!gameOver) return;
+    const stats = getStats();
+    stats.forestGamesPlayed++;
+    stats.totalGamesPlayed++;
+    saveStats(stats);
+    setTimeout(() => {
+      // Win only if scored enough and didn't miss danger letters
+      navigate(score >= 3 && !missedDanger.current ? '/victory' : '/game-over');
+    }, 800);
   }, [gameOver, score, navigate]);
 
-  const handleTap = (env: Envelope, action: 'safe' | 'danger') => {
-    const correct = (action === 'safe' && env.safe) || (action === 'danger' && !env.safe);
-    if (correct) setScore(s => s + 1);
-    else setErrors(e => e + 1);
-    setEnvelopes(prev => prev.filter(e => e.id !== env.id));
+  const handleTap = (fl: FallingLetter) => {
+    if (fl.color === 'white') {
+      // Tapping white = instant game over
+      setGameOver(true);
+      return;
+    }
+    // Black or pink — correct, delete it
+    setScore(s => s + 1);
+    setItems(prev => prev.filter(l => l.id !== fl.id));
   };
 
   const handleRestart = () => {
-    setEnvelopes([]);
+    setItems([]);
     setScore(0);
-    setErrors(0);
-    setTimeLeft(30);
+    setTimeLeft(15);
     setGameOver(false);
     setPaused(false);
+    missedDanger.current = false;
+  };
+
+  const getLetterStyle = (color: FallingLetter['color']) => {
+    switch (color) {
+      case 'black': return 'bg-gray-900 text-white';
+      case 'pink': return 'bg-pink-500 text-white';
+      case 'white': return 'bg-white text-gray-800 border border-gray-300';
+    }
   };
 
   return (
     <ScreenLayout backgroundImage="/images/letter_game.png">
-      <PauseMenu
-        onResume={() => setPaused(p => !p)}
-        onRestart={handleRestart}
-      />
+      <PauseMenu onResume={() => setPaused(p => !p)} onRestart={handleRestart} />
       <div className="absolute top-4 left-16 right-4 flex justify-between">
         <span className="bg-white/80 rounded-full px-3 py-1.5 font-bold text-sm text-green-600">✅ {score}</span>
         <span className="bg-white/80 rounded-full px-3 py-1.5 font-bold text-sm text-orange-600">⏱ {timeLeft}с</span>
-        <span className="bg-white/80 rounded-full px-3 py-1.5 font-bold text-sm text-red-600">❌ {errors}</span>
       </div>
-      {envelopes.map(env => (
-        <div
-          key={env.id}
-          className="absolute"
-          style={{ left: `${env.x}%`, top: `${env.y}%`, transition: 'top 80ms linear' }}
+      {items.map(fl => (
+        <button
+          key={fl.id}
+          onClick={() => handleTap(fl)}
+          className={`absolute w-12 h-12 rounded-xl shadow-lg flex items-center justify-center font-bold text-lg transition-transform active:scale-90 ${getLetterStyle(fl.color)}`}
+          style={{ left: `${fl.x}%`, top: `${fl.y}%` }}
         >
-          <div className={`w-14 h-10 rounded-lg shadow-lg flex items-center justify-center ${env.safe ? 'bg-white' : 'bg-gray-800'}`}>
-            <Mail size={24} className={env.safe ? 'text-blue-500' : 'text-red-400'} />
-          </div>
-          <div className="flex gap-1 mt-1 justify-center">
-            <button
-              onClick={() => handleTap(env, 'safe')}
-              className="bg-green-500 text-white text-xs px-2 py-1 rounded-full"
-            >
-              ✅
-            </button>
-            <button
-              onClick={() => handleTap(env, 'danger')}
-              className="bg-red-500 text-white text-xs px-2 py-1 rounded-full"
-            >
-              🗑
-            </button>
-          </div>
-        </div>
+          {fl.letter}
+        </button>
       ))}
     </ScreenLayout>
   );
