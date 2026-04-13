@@ -1,11 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import ScreenLayout from '@/components/ScreenLayout';
 import { getStats, saveStats } from '@/lib/storage';
 import { Volume2 } from 'lucide-react';
 import { toggleAudio, stopAudio } from '@/lib/audioPlayer';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-const ALPHABET_LIST = [
+const ALPHABET_LIST: { letter: string; image: string }[] = [
   { letter: 'а', image: '/images/letter_a.png' },
   { letter: 'б', image: '/images/letter_б.png' },
   { letter: 'в', image: '/images/letter_в.png' },
@@ -39,45 +38,53 @@ const ALPHABET_LIST = [
 const AlphabetScreen = () => {
   const navigate = useNavigate();
   const { index } = useParams<{ index: string }>();
-  const idx = parseInt(index || '0', 10);
-  const item = ALPHABET_LIST[idx];
+  const [idx, setIdx] = useState(() => {
+    const parsed = parseInt(index || '0', 10);
+    return parsed >= 0 && parsed < ALPHABET_LIST.length ? parsed : 0;
+  });
 
   useEffect(() => () => stopAudio(), []);
 
-  if (!item || idx < 0 || idx >= ALPHABET_LIST.length) {
-    navigate('/menu');
-    return null;
-  }
+  // Sync URL param changes (e.g. direct navigation)
+  useEffect(() => {
+    const parsed = parseInt(index || '0', 10);
+    if (parsed >= 0 && parsed < ALPHABET_LIST.length) {
+      setIdx(parsed);
+    }
+  }, [index]);
+
+  const item = ALPHABET_LIST[idx];
+  const audioFile = `/audio/letter_${item.letter === 'а' ? 'a' : item.letter}.mp3`;
+
+  const goTo = (newIdx: number) => {
+    stopAudio();
+    if (newIdx >= 0 && newIdx < ALPHABET_LIST.length) {
+      setIdx(newIdx);
+      window.history.replaceState(null, '', `/alphabet/${newIdx}`);
+    }
+  };
 
   const handleNext = () => {
-    stopAudio();
     const stats = getStats();
     if (idx > stats.alphabetProgress) {
       stats.alphabetProgress = idx;
     }
     if (idx === ALPHABET_LIST.length - 1) {
       stats.alphabetCompleted = true;
+      saveStats(stats);
+      stopAudio();
+      navigate('/menu');
+      return;
     }
     saveStats(stats);
-
-    if (idx < ALPHABET_LIST.length - 1) {
-      navigate(`/alphabet/${idx + 1}`, { replace: true });
-    } else {
-      navigate('/menu');
-    }
+    goTo(idx + 1);
   };
-
-  const handlePrev = () => {
-    stopAudio();
-    if (idx > 0) {
-      navigate(`/alphabet/${idx - 1}`, { replace: true });
-    }
-  };
-
-  const audioFile = `/audio/letter_${item.letter === 'а' ? 'a' : item.letter}.mp3`;
 
   return (
-    <ScreenLayout backgroundImage={item.image} key={idx}>
+    <div
+      className="relative w-full h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
+      style={{ backgroundImage: `url(${item.image})` }}
+    >
       <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-4 px-6">
         <button
           onClick={() => { stopAudio(); navigate('/menu'); }}
@@ -87,7 +94,7 @@ const AlphabetScreen = () => {
         </button>
         {idx > 0 && (
           <button
-            onClick={handlePrev}
+            onClick={() => goTo(idx - 1)}
             className="bg-orange-400/90 hover:bg-orange-500 text-white font-bold py-2.5 px-5 rounded-full text-lg shadow-lg transition-transform active:scale-95"
           >
             ←
@@ -106,7 +113,7 @@ const AlphabetScreen = () => {
           ➜
         </button>
       </div>
-    </ScreenLayout>
+    </div>
   );
 };
 
