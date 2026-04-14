@@ -5,7 +5,7 @@ import { toggleAudio, stopAudio } from '@/lib/audioPlayer';
 import { useEffect, useState } from 'react';
 
 const ITEMS = [
-  { letter: 'А', image: '/images/letter_а.png', audio: '/audio/letter_а.mp3' },
+  { letter: 'А', image: '/images/letter_a.png', audio: '/audio/letter_a.mp3' },
   { letter: 'Б', image: '/images/letter_б.png', audio: '/audio/letter_б.mp3' },
   { letter: 'В', image: '/images/letter_в.png', audio: '/audio/letter_в.mp3' },
   { letter: 'Г', image: '/images/letter_г.png', audio: '/audio/letter_г.mp3' },
