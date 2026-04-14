@@ -21,7 +21,7 @@ const MenuScreen = () => {
       <div className="absolute inset-0 flex flex-col items-center justify-end pb-8 px-6">
         <div className="w-full max-w-xs space-y-3 mb-4">
           <button
-            onClick={() => { stopAudio(); navigate('/alphabet/0'); }}
+            onClick={() => { stopAudio(); navigate('/alphabet'); }}
             className="w-full bg-orange-400/90 hover:bg-orange-500 text-white font-bold py-3 rounded-full text-lg shadow-lg transition-transform active:scale-95"
           >
             Азбука
