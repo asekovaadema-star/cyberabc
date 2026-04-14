@@ -38,7 +38,7 @@ const App = () => (
           <Route path="/register-option" element={<RegisterOption />} />
           <Route path="/register-child" element={<RegisterChild />} />
           <Route path="/menu" element={<MenuScreen />} />
-          <Route path="/alphabet/:index" element={<AlphabetScreen />} />
+          <Route path="/alphabet" element={<AlphabetScreen />} />
           <Route path="/game-menu" element={<GameMenuScreen />} />
           <Route path="/password-instruction" element={<PasswordInstruction />} />
           <Route path="/password-game" element={<PasswordGame />} />
