@@ -1,5 +1,13 @@
 // localStorage helpers for Cyber ABC app
 
+export interface SecurityAnswers {
+  childrenCount: string;
+  favoriteColor: string;
+  birthCountry: string;
+  carBrand: string;
+  motherName: string;
+}
+
 export interface UserProfile {
   role: 'child' | 'parent';
   childName: string;
@@ -7,6 +15,7 @@ export interface UserProfile {
   parentName: string;
   parentPhone: string;
   parentPassword: string;
+  securityAnswers?: SecurityAnswers;
 }
 
 export interface GameStats {
