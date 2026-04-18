@@ -5,34 +5,9 @@ import { toggleAudio, stopAudio } from '@/lib/audioPlayer';
 import { useEffect, useState } from 'react';
 
 const ITEMS = [
-  { letter: 'А', image: '/images/letter_a.png', audio: '/audio/letter_a.mp3' },
-  { letter: 'Б', image: '/images/letter_b.png', audio: '/audio/letter_б.mp3' },
-  { letter: 'В', image: '/images/letter_v.png', audio: '/audio/letter_в.mp3' },
-  { letter: 'Г', image: '/images/letter_g.png', audio: '/audio/letter_г.mp3' },
-  { letter: 'Д', image: '/images/letter_d.png', audio: '/audio/letter_д.mp3' },
-  { letter: 'Е', image: '/images/letter_e.png', audio: '/audio/letter_е.mp3' },
-  { letter: 'Ж', image: '/images/letter_j.png', audio: '/audio/letter_ж.mp3' },
-  { letter: 'З', image: '/images/letter_z.png', audio: '/audio/letter_з.mp3' },
-  { letter: 'И', image: '/images/letter_i.png', audio: '/audio/letter_и.mp3' },
-  { letter: 'К', image: '/images/letter_k.png', audio: '/audio/letter_к.mp3' },
-  { letter: 'Л', image: '/images/letter_l.png', audio: '/audio/letter_л.mp3' },
-  { letter: 'М', image: '/images/letter_m.png', audio: '/audio/letter_м.mp3' },
-  { letter: 'Н', image: '/images/letter_n.png', audio: '/audio/letter_н.mp3' },
-  { letter: 'О', image: '/images/letter_o.png', audio: '/audio/letter_о.mp3' },
-  { letter: 'П', image: '/images/letter_p.png', audio: '/audio/letter_п.mp3' },
-  { letter: 'Р', image: '/images/letter_r.png', audio: '/audio/letter_р.mp3' },
-  { letter: 'С', image: '/images/letter_s.png', audio: '/audio/letter_с.mp3' },
-  { letter: 'Т', image: '/images/letter_t.png', audio: '/audio/letter_т.mp3' },
-  { letter: 'У', image: '/images/letter_y.png', audio: '/audio/letter_у.mp3' },
-  { letter: 'Ф', image: '/images/letter_f.png', audio: '/audio/letter_ф.mp3' },
-  { letter: 'Х', image: '/images/letter_x.png', audio: '/audio/letter_х.mp3' },
-  { letter: 'Ц', image: '/images/letter_c.png', audio: '/audio/letter_ц.mp3' },
-  { letter: 'Ч', image: '/images/letter_ch.png', audio: '/audio/letter_ч.mp3' },
-  { letter: 'Ш', image: '/images/letter_sh.png', audio: '/audio/letter_ш.mp3' },
-  { letter: 'Щ', image: '/images/letter_shh.png', audio: '/audio/letter_щ.mp3' },
-  { letter: 'Э', image: '/images/letter_ee.png', audio: '/audio/letter_э.mp3' },
-  { letter: 'Ю', image: '/images/letter_u.png', audio: '/audio/letter_ю.mp3' },
-  { letter: 'Я', image: '/images/letter_ya.png', audio: '/audio/letter_я.mp3' },
+  { letter: 'А', image: '/images/letter_aa.png', audio: '/audio/letter_a.mp3' },
+  { letter: 'Б', image: '/images/letter_bb.png', audio: '/audio/letter_б.mp3' },
+  { letter: 'В', image: '/images/letter_vv.png', audio: '/audio/letter_в.mp3' },
 ] as const;
 
 type ViewMode = 'grid' | 'detail';
